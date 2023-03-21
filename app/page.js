@@ -1,91 +1,104 @@
-import Image from 'next/image'
-import { Inter } from '@next/font/google'
-import styles from './page.module.css'
+"use client"
 
-const inter = Inter({ subsets: ['latin'] })
+import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import 'leaflet-draw/dist/leaflet.draw';
+import './style.scss';
+import 'bootstrap/dist/css/bootstrap.css'
+import "leaflet/dist/images/marker-icon-2x.png";
+import "leaflet/dist/images/marker-shadow.png";
 
 export default function Home() {
+  const [circle, setCircle] = useState(null)
+  const [markerCount, setMarkerCount] = useState(0)
+  const mapRef = useRef(null)
+
+  const handleAddMarker = () => {
+
+    // random latitude and longitude
+    const bounds = mapRef.current.getBounds()
+    const lat = Math.random() * (bounds.getNorth() - bounds.getSouth()) + bounds.getSouth()
+    const lng = Math.random() * (bounds.getEast() - bounds.getWest()) + bounds.getWest()
+
+    const marker = L.marker([lat, lng], { name: String.fromCharCode(65 + markerCount) })
+
+    // Save the circle in state and open a popup
+    setCircle(marker)
+    marker.addTo(mapRef.current)
+    marker.bindPopup(`Name: ${String.fromCharCode(65 + markerCount)}, Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}`).openPopup()
+    setMarkerCount((markerCount + 1) % 26)
+  }
+  useEffect(() => {
+    mapRef.current = L.map('map').setView([35.821430, 10.634422], 8)
+    L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mapRef.current)
+
+    var drawnItems = new L.FeatureGroup();
+    mapRef.current.addLayer(drawnItems);
+    var drawControl = new L.Control.Draw({
+      draw: {
+        circle: true,
+        circlemarker: false,
+        marker: false,
+        polyline: false,
+        rectangle: false,
+        polygon: false
+      },
+    });
+    mapRef.current.addControl(drawControl);
+
+    //Draw Circle
+    mapRef.current.on('draw:created', function (e) {
+      var layer = e.layer;
+      drawnItems.addLayer(layer);
+
+      if (layer instanceof L.Circle) {
+        const radius = layer.getRadius();
+        const bounds = layer.getBounds()
+        const center = bounds.getCenter();
+        const selectedMarkers = [];
+
+        mapRef.current.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            const markerName = layer.options.name;
+            const markerLatLng = layer.getLatLng()
+            const distance = markerLatLng.distanceTo(center);
+
+            if (distance <= radius) {
+              selectedMarkers.push({ name: markerName, latLng: markerLatLng });
+            }
+          }
+        })
+
+        const clickCircle = () => {
+          let popupContent = ''
+          if (selectedMarkers.length > 0) {
+            popupContent = selectedMarkers
+              .map((marker) => `Name: ${marker.name}, Latitude: ${marker.latLng.lat.toFixed(5)}, Longitude: ${marker.latLng.lng.toFixed(5)}`)
+              .join('<br/>')
+          } else {
+            popupContent = "No markers found in the selected area.";
+          }
+          L.popup()
+            .setLatLng(center)
+            .setContent(popupContent)
+            .openOn(mapRef.current)
+        }
+        layer.on('click', () => {
+          clickCircle(selectedMarkers)
+        })
+        clickCircle(selectedMarkers)
+      }
+    });
+  }, []);
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.js</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-        <div className={styles.thirteen}>
-          <Image src="/thirteen.svg" alt="13" width={40} height={31} priority />
-        </div>
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://beta.nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={inter.className}>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p className={inter.className}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    <div>
+      <button className='btn btn-info overlay-button-container' onClick={handleAddMarker}>Add Marker</button>
+      <div id="map" />
+    </div>
   )
 }
