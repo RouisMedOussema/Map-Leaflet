@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-const AddTaxi = ({mapRef}) => {
-    
-    const [circle, setCircle] = useState(null)
+const AddTaxi = ({ mapRef }) => {
+
+    const [taxi, setTaxi] = useState(null)
     const [count, setCount] = useState(0)
 
     const handleAddTaxi = () => {
@@ -23,9 +23,10 @@ const AddTaxi = ({mapRef}) => {
         })
 
         // Popup
-        setCircle(taxi)
         taxi.addTo(mapRef.current)
-        taxi.bindPopup(`Id: ${randomId}, Name: ${String.fromCharCode(65 + count)}, Status: <b>${randomTaxiStatus}</b>, Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}`).openPopup()
+            .bindPopup(`Id: ${randomId}, Name: ${String.fromCharCode(65 + count)}, Status: <b>${randomTaxiStatus}</b>, Latitude: ${lat.toFixed(5)}, Longitude: ${lng.toFixed(5)}`)
+            .openPopup()
+        setTaxi(taxi)
         setCount((count + 1) % 26)
     }
 
