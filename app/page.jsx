@@ -9,7 +9,7 @@ import './style.scss'
 import 'bootstrap/dist/css/bootstrap.css'
 import "leaflet/dist/images/marker-icon-2x.png"
 import "leaflet/dist/images/marker-shadow.png"
-import AddMarker from './add-marker'
+import AddTaxi from './add-taxi'
 
 export default function Home() {
   const mapRef = useRef(null)
@@ -44,29 +44,29 @@ export default function Home() {
         const radius = layer.getRadius()
         const bounds = layer.getBounds()
         const center = bounds.getCenter()
-        const selectedMarkers = []
+        const selectedTaxis = []
 
         mapRef.current.eachLayer((layer) => {
           if (layer instanceof L.Marker) {
-            const markerId = layer.options.status
-            const markerName = layer.options.name
-            const markerLatLng = layer.getLatLng()
-            const markerStatus = layer.options.status
-            const distance = markerLatLng.distanceTo(center)
-            if (distance <= radius && markerStatus == "Free") {
-              selectedMarkers.push({ name: markerName, latLng: markerLatLng, status: markerStatus, id: markerId })
+            const taxiId = layer.options.randomId
+            const taxiName = layer.options.name
+            const taxiLatLng = layer.getLatLng()
+            const taxiStatus = layer.options.status
+            const distance = taxiLatLng.distanceTo(center)
+            if (distance <= radius && taxiStatus == "Free") {
+              selectedTaxis.push({ id: taxiId, name: taxiName, latLng: taxiLatLng, status: taxiStatus })
             }
           }
         })
 
-        const clickCircle = () => {
+        const clickCircle = (selectedTaxis) => {
           let popupContent = ''
-          if (selectedMarkers.length > 0) {
-            popupContent = selectedMarkers
-              .map((marker) => `Id: <b>${marker.id}</>, Name: ${marker.name}, Status: <b>${marker.status}</b>, Latitude: ${marker.latLng.lat.toFixed(5)}, Longitude: ${marker.latLng.lng.toFixed(5)}`)
+          if (selectedTaxis.length > 0) {
+            popupContent = selectedTaxis
+              .map((taxi) => `Id: <b>${taxi.id}</b>, Name: <b>${taxi.name}</b>, Status: <b>${taxi.status}</b>, Latitude: ${taxi.latLng.lat.toFixed(5)}, Longitude: ${taxi.latLng.lng.toFixed(5)}`)
               .join('<br/>')
           } else {
-            popupContent = "No markers found in the selected area."
+            popupContent = "No taxis found in the selected area."
           }
           L.popup()
             .setLatLng(center)
@@ -74,16 +74,16 @@ export default function Home() {
             .openOn(mapRef.current)
         }
         layer.on('click', () => {
-          clickCircle(selectedMarkers)
+          clickCircle(selectedTaxis)
         })
-        clickCircle(selectedMarkers)
+        clickCircle(selectedTaxis)
       }
     });
   }, []);
 
   return (
     <div>
-      <AddMarker mapRef={mapRef} />
+      <AddTaxi mapRef={mapRef} />
       <div id="map" />
     </div>
   )
